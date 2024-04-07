@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>c-ide</title>
+    <link rel="stylesheet" href="codemirror/lib/codemirror.css">
+    <link href="codemirror/theme/dracula.css" rel="stylesheet" />
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: white;
+        }
+
+        .container {
+            padding-top: 5px;
+            padding-left: 5px;
+            padding-right: 5px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        button {
+            width: 85px;
+            height: 60px;
+            border: 1px solid rgb(189, 242, 189);
+            border-radius: 100px;
+            background-color: green;
+            margin-right: 150px;
+            margin-left: 150px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #04AA6D;
+        }
+
+        .sidebar {
+            padding: 0;
+            display: flex;
+            border: 1px solid white;
+            flex: 1;
+        }
+
+        .left {
+            width: 50vw;
+            position: relative;
+            flex: 1;
+            overflow-y: hidden;
+            background-color: rgba(40, 42, 54, 255);
+            display: flex;
+            flex-direction: column;
+            border-radius: 10px;
+            font-size: 17px;
+            box-shadow: 1px 2px 2px rgba(40, 42, 54, 255);
+        }
+
+        .code-container {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .right {
+            width: 50vw;
+            overflow: auto;
+            padding-left: 15px;
+            padding-right: 15px;
+            background-color: rgba(40, 42, 54, 255);
+            border-radius: 10px;
+            box-shadow: 1px 2px 2px rgba(40, 42, 54, 255);
+        }
+
+        .separator {
+            cursor: col-resize;
+            width: 10px;
+            height: 100%;
+            background-color: rgb(255, 255, 255);
+        }
+
+        .textarea-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+            color: #fff;
+        }
+
+        .textarea {
+            margin: 2px;
+            width: 1200px;
+            height: 125px;
+            resize: none;
+            color: white;
+            font-size: 15px;
+            background: rgba(40, 42, 54, 255);
+            border-radius: 10px;
+            box-shadow: 5px 10px 18px rgba(40, 42, 54, 255)
+        }
+
+        .icon {
+            text-align: center;
+            position: absolute;
+            bottom: 15px;
+            left: 90%;
+            transform: translateX(-50%);
+            border: solid white;
+            background: #fff;
+            height: 40px;
+            width: 40px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+
+        /* Popup styles */
+        .popup {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #f3f4f6;
+            width: 90vh;
+            opacity: 1;
+            /* Set width to 50% of viewport height */
+            height: 90vh;
+            /* Set height to 50% of viewport height */
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 999;
+        }
+
+
+        .popup-bar {
+            padding: 10px;
+        }
+
+        #outputscr{
+            width: 100%;
+            height: 440px;
+        }
+
+        .popup-content {
+            margin-top: 10px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+        }
+
+        .close-button {
+            font-family: nexa;
+            font-size: 36px;
+            cursor: pointer;
+            color: black;
+            transition: 0.5s ease;
+        }
+
+        .close-button:hover {
+            font-size: 42px;
+            color: red;
+        }
+
+        .ask-me-anything-bar {
+            width: 700px;
+            height: 30px;
+            background-color: #e5e7eb;
+            border-radius: 20px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin-bottom: 70px;
+            position: relative;
+        }
+
+        #sendbtn {
+            margin-left: 30px;
+            margin-right: 10px;
+            width: 60px;
+            height: 40px;
+            border-radius: 45px;
+            margin-bottom: 70px;
+        }
+
+        label{
+            color: black;
+            font-weight: bold;
+            font-family: 'Segoe UI';
+            font-size: 20px;
+            margin-right: 20px;
+        }
+
+        #canvas{
+            color: white;
+        }
+
+        .node {
+        width: 80px;
+        height: 50px;
+        background-color: #333;
+        border: 2px solid black;
+        border-radius: 5px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        margin-right: 20px;
+    }
+    .node::after {
+        content: '';
+        position: absolute;
+        height: 2px;
+        background-color: #333;
+        top: 50%;
+        width: 50px;
+        left: calc(100% + 10px);
+    }
+    .node:last-child::after {
+        display: none;
+    }
+    .node-container {
+        display: flex;
+        align-items: center;
+    }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="left">
+                <div class="code-container">
+                    <textarea id="editor">
+#include <stdio.h>
+int main() {
+    printf("Hello, World!");
+    return 0;
+}
+</textarea>
+                    <div class="icon" onclick="openPopup()">?</div>
+                </div>
+            </div>
+            <div class="separator"></div>
+            <div class="right" id="right">
+                <div id="canvas">
+                </div>
+            </div>
+        </div>
+        <div class="textarea-container">
+            <label>Input</label>
+            <textarea id="input" class="textarea"></textarea>
+            <button id="run">Run</button>
+            <label>Output</label>
+            <textarea id="output" class="textarea"></textarea>
+        </div>
+    </div>
+
+    <!-- Popup content -->
+    <div class="popup" id="popup" style="display: none;">
+        <div class="popup-bar">
+            <!-- <span>Ask Me Anything</span> -->
+            <span class="close-button" onclick="closePopup()">X</span>
+        </div>
+        <div id="outputscr">Hello User</div>
+        <a id="codehelp" href="#">Why is my code not working</a>
+        <div class="popup-content">
+            <textarea id="askbar" class="ask-me-anything-bar" style="resize: none;" placeholder="Ask me anything..."></textarea>
+            <button id="sendbtn">Send</button>
+        </div>
+    </div>
+
+    <script src="codemirror/lib/codemirror.js"></script>
+    <script src="codemirror/mode/clike/clike.js"></script>
+    <script src="codemirror/addon/edit/closebrackets.js"></script>
+    <script>
+        var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+            mode: "text/x-c++src",
+            theme: "dracula",
+            lineNumbers: true,
+            autoCloseBrackets: true,
+        });
+
+        const separator = document.querySelector('.separator');
+        const left = document.querySelector('.left');
+        const right = document.querySelector('.right');
+
+        let isResizing = false;
+
+        separator.addEventListener('mousedown', function (e) {
+            isResizing = true;
+            document.addEventListener('mousemove', resize);
+        });
+
+        document.addEventListener('mouseup', function () {
+            isResizing = false;
+            document.removeEventListener('mousemove', resize);
+        });
+
+        function resize(e) {
+            if (isResizing) {
+                const leftWidth = left.getBoundingClientRect().width;
+                const separatorWidth = separator.getBoundingClientRect().width;
+                const sidebarWidth = document.querySelector('.sidebar').getBoundingClientRect().width;
+
+                const newRightWidth = sidebarWidth - e.clientX + left.getBoundingClientRect().left - separatorWidth / 2;
+
+                const minWidth = 150;
+                const newRightWidthPx = Math.max(minWidth, newRightWidth) + 'px';
+
+                right.style.width = newRightWidthPx;
+            }
+        }
+
+        function adjustCodeMirrorHeight() {
+            const leftHeight = left.getBoundingClientRect().height;
+            editor.setSize(null, leftHeight);
+        }
+
+        window.addEventListener('resize', adjustCodeMirrorHeight);
+        adjustCodeMirrorHeight();
+
+        function openPopup() {
+            document.getElementById('popup').style.display = 'block';
+        }
+
+        function closePopup() {
+            document.getElementById('popup').style.display = 'none';
+        }
+
+        var send = document.getElementById("sendbtn")
+        var query = document.getElementById("askbar");
+        var outputscreen = document.getElementById("outputscr")
+        send.addEventListener("click", async function(){
+            qu={
+                ask:query.value
+            };
+            var outresp = await fetch("http://localhost:8000/askgemini",{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify(qu)
+            })
+            var r = await outresp.json()
+            outputscreen.innerHTML = r.response
+        });
+
+        var codeh = document.getElementById("codehelp");
+        codeh.addEventListener("click", async function(){
+        var code;
+            code={
+                code:editor.getValue()
+            };
+            var oresp = await fetch("http://localhost:8000/codehelp",{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify(code)
+            })
+            var cc = await oresp.json()
+            outputscreen.innerHTML = cc.response
+        });
+
+        var run = document.getElementById("run")
+        var output = document.getElementById("output")
+        var input = document.getElementById("input")
+        var code;
+        run.addEventListener("click", async function(){
+            canvas.innerHTML = ''
+            code={
+                code:editor.getValue(),
+                input:input.value,
+                node:hasNode
+            }
+            var oData = await fetch("http://localhost:8000/compilecode",{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify(code)
+            })
+            var d=await oData.json()
+            console.log("d output",d.output)
+            if (hasNode){
+                drawLinkedList(extractLinkedListValues(editor.getValue()))
+            }
+            else{
+                drawArraysFromInput(d.resp)
+            }
+            output.textContent = d.output
+        })
+    </script>
+
+    <script>
+    function extractArrays(code) {
+        const arrayRegex = /(?:int|float|char|double)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\[\s*(\d+)\s*\]\s*;/g;
+        const arrayRegex2 = /(?:int|float|char|double)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\[\s*(\d+)\s*\]\s*=\s*\{(.*?)\}/g;
+        let match;
+        const arrays = [];
+
+        // Check for arrays defined with size only (e.g., int arr[5];)
+        while ((match = arrayRegex.exec(code)) !== null) {
+            arrays.push({ name: match[1], size: parseInt(match[2]), values: [] });
+        }
+
+        // Check for arrays defined with values (e.g., int arr[5] = {1,2,3,4,5};)
+        while ((match = arrayRegex2.exec(code)) !== null) {
+            const name = match[1];
+            const size = parseInt(match[2]);
+            const values = match[3].split(',').map(val => parseInt(val.trim()));
+            arrays.push({ name, size, values });
+        }
+        console.log(arrays)
+        return arrays;
+    }
+
+    function extractArrayValues(code, arrays) {
+        const arrayValues = {};
+        arrayValuesFromDict = [];
+
+        arrays.forEach(arrayDef => {
+            const { name, size, values } = arrayDef;
+            const arrayValuesFromDict = values.length > 0 ? values : Array(size).fill(null);
+            //console.log(arrayValuesFromDict);
+            if (arrayDef.values.length <= arrayDef.size){
+                const arrayValuesFromDict = values.length > 0 ? values : Array(size).fill(null);
+            }
+            else{
+                console.error(`Index out of bounds for array ${name}`);
+                return {};
+            }
+            const regex = new RegExp(`${name}\\s*\\[\\s*(\\d+)\\s*\\]\\s*=\\s*(\\d+(?:\\.\\d+)?)`, 'g');
+            let match;
+            const indexedValues = Array.from(arrayValuesFromDict);
+
+            while ((match = regex.exec(code)) !== null) {
+                const index = parseInt(match[1]);
+                const value = parseInt(match[2]);
+                if (index >= size) {
+                    console.error(`Index ${index} out of bounds for array ${name}`);
+                    return {};
+                } else {
+                    indexedValues[index] = value;
+                }
+            }
+
+            arrayValues[name] = indexedValues;
+        });
+
+        return arrayValues;
+    }
+
+
+    function extractLinkedListValues(code) {
+    // Regular expressions to capture arguments passed to insertAtBeginning or insertAtEnd functions
+    const insertAtBeginningRegex = /insertAtBeginning\s*\(\s*(.*?)\s*\)/g;
+    const insertAtEndRegex = /insertAtEnd\s*\(\s*(.*?)\s*\)/g;
+
+    // Array to store values inserted into the linked list
+    let linkedListValues = [];
+
+    // Capture values passed to insertAtBeginning function
+    let match;
+    while ((match = insertAtBeginningRegex.exec(code)) !== null) {
+        let value = match[1].trim(); // Trim whitespace
+        if (!isNaN(value)) { // Check if the value is a number
+            linkedListValues.push(parseInt(value)); // Parse and push to the array
+        }
+    }
+
+    // Capture values passed to insertAtEnd function
+    while ((match = insertAtEndRegex.exec(code)) !== null) {
+        let value = match[1].trim(); // Trim whitespace
+        if (!isNaN(value)) { // Check if the value is a number
+            linkedListValues.push(parseInt(value)); // Parse and push to the array
+        }
+    }
+
+    // Return the array of values inserted into the linked list
+    return linkedListValues;
+    }
+
+    function drawStackedSquares(arrays,clearcan = true) {
+    // Get canvas element
+    var canvas = document.getElementById("canvas");
+
+    // Clear canvas
+    if (clearcan){
+        canvas.innerHTML = '';
+    }
+
+    // Loop through each array in the dictionary
+    Object.entries(arrays).forEach(function([arrayName, arrayValues]) {
+        // Get the array length
+        var arrayLength = arrayValues.length;
+
+        // Create a container for the array
+        var arrayContainer = document.createElement("div");
+        arrayContainer.style.display = "inline-block";
+        arrayContainer.style.marginRight = "25px";
+
+        // Loop through the array values and create a square for each value
+        arrayValues.forEach(function(value) {
+            // Create a square element
+            var square = document.createElement("div");
+            square.style.width = "50px";
+            square.style.height = "50px";
+            square.style.backgroundColor = "transparent";
+            square.style.border = "3px solid lime";
+            square.style.textAlign = "center";
+            square.style.lineHeight = "50px";
+            square.style.position = "relative";
+            square.style.overflow = "hidden";
+            square.style.marginBottom = "-2px"; // To overlap squares slightly
+            square.style.opacity = "0";
+            square.style.transition = "opacity 0.6s ease";
+
+            // Add value inside the square
+            square.innerText = value !== null ? value : '';
+            setTimeout(function() {
+                square.style.opacity = 1; // Set opacity to 1 after a short delay
+            }, 100 * arrayValues.indexOf(value)); // Adjust delay as needed
+
+            // Append square to the array container
+            arrayContainer.appendChild(square);
+        });
+
+        // Append array container to the canvas with the array name as label
+        var nameLabel = document.createElement("div");
+        nameLabel.innerText = arrayName;
+        canvas.appendChild(nameLabel);
+        canvas.appendChild(arrayContainer);
+    });
+}
+
+function extractLinkedListValues(code) {
+    console.log("Extract linkedlist values")
+    // Regular expressions to capture arguments passed to insertAtBeginning or insertAtEnd functions
+    const insertAtBeginningRegex = /insertAtBeginning\s*\(\s*&?\s*head\s*,\s*(.*?)\s*\)/g;
+    const insertAtEndRegex = /insertAtEnd\s*\(\s*&?\s*head\s*,\s*(.*?)\s*\)/g;
+
+    // Array to store values inserted into the linked list
+    let linkedListValues = [];
+
+    // Capture values passed to insertAtBeginning function
+    let match;
+    while ((match = insertAtBeginningRegex.exec(code)) !== null) {
+        let value = match[1].trim(); // Trim whitespace
+        if (!isNaN(value)) { // Check if the value is a number
+            linkedListValues.push(parseInt(value)); // Parse and push to the array
+        }
+    }
+
+    // Capture values passed to insertAtEnd function
+    while ((match = insertAtEndRegex.exec(code)) !== null) {
+        let value = match[1].trim(); // Trim whitespace
+        if (!isNaN(value)) { // Check if the value is a number
+            linkedListValues.push(parseInt(value)); // Parse and push to the array
+        }
+    }
+
+    console.log(linkedListValues)
+    // Return the array of values inserted into the linked list
+    return linkedListValues;
+}
+
+function drawLinkedList(values) {
+    const canvas = document.getElementById('canvas');
+    canvas.innerHTML = ''; // Clear previous content
+
+    let prevNode = null;
+    values.forEach((value, index) => {
+        const node = document.createElement('div');
+        node.classList.add('node');
+        node.style.opacity = "0";
+        node.style.transition = "opacity 0.6s ease";
+        node.textContent = value;
+
+        setTimeout(function() {
+                node.style.opacity = 1; // Set opacity to 1 after a short delay
+            }, 100 * values.indexOf(value));
+
+        if (index > 0) {
+            prevNode.after(node);
+        } else {
+            canvas.appendChild(node);
+        }
+
+        prevNode = node;
+    });
+}
+
+    function drawArraysFromInput(inputString) {
+        try {
+            // Parse the input string into a JavaScript object
+            const arrays = JSON.parse(inputString);
+
+            // Iterate over the key-value pairs in the object
+            Object.entries(arrays).forEach(([arrayName, arrayValues]) => {
+                // Call drawStackedArrays for each array
+                drawStackedSquares({ [arrayName]: arrayValues },false);
+            });
+        } catch (error) {
+            console.error("Error parsing input string:", error);
+        }
+    }
+
+    let lastKeyPressTime = null;
+    var lastcode = '';
+    function checkTyping() {
+        const currentTime = Date.now();
+        const timeSinceLastPress = currentTime - lastKeyPressTime;
+
+        if (timeSinceLastPress > 1500) {
+            console.log("not typing");
+            const code = editor.getValue();
+            if(code !== lastcode){
+                const arrayDefinitions = extractArrays(code);
+                const arrayValues = extractArrayValues(code, arrayDefinitions);
+                drawStackedSquares(arrayValues);
+                drawLinkedListNodes(code);
+                lastcode = code;
+            }
+
+        } else { 
+            console.log("typing");
+        }
+
+        // Update timer regardless of key press
+        lastKeyPressTime = currentTime;
+    }
+
+    // Run checkTyping function every 4 seconds
+    const intervalId = setInterval(checkTyping, 1500);
+
+    // Optionally, clear the interval when the window loses focus
+    //window.addEventListener("blur", () => clearInterval(intervalId));
+</script>
+
+<script>
+    var hasNode = false;
+    function drawLinkedListNodes(code) {
+    // Regular expression to match structure definitions
+    const structRegex = /struct\s+(\w+)\s*{([^}]*)}/g;
+
+    // Regular expression to match structure member names and types
+    const memberRegex = /\b(\w+)\s+(\w+)\s*;/g;
+
+    let match;
+    const canvas = document.getElementById("canvas");
+
+    // Find structure definitions
+    while ((match = structRegex.exec(code)) !== null) {
+        const structName = match[1];
+        const structMembers = match[2];
+        // Check if the structure has at least one member and if it has an int member
+        if (structMembers && /\bint\s+\w+\b/.test(structMembers)) {
+            // Draw rectangle for the node
+            const rectangle = document.createElement("div");
+            rectangle.style.width = "100px"; // Adjust width as needed
+            rectangle.style.height = "50px"; // Adjust height as needed
+            rectangle.style.backgroundColor = "#333";
+            rectangle.style.border = "1px solid black";
+            rectangle.style.textAlign = "center";
+            rectangle.style.lineHeight = "50px";
+            rectangle.style.position = "relative";
+            rectangle.style.overflow = "hidden";
+            rectangle.style.color = "white"
+            rectangle.innerText = "Head";
+
+            // Append rectangle to the canvas
+            canvas.appendChild(rectangle);
+            hasNode = true;
+        }
+        else{
+            hasNode = false;
+        }
+    }
+}
+
+</script>
+</body>
+</html>
